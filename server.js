@@ -18,9 +18,9 @@ connection.connect(function(err){
 });
 
 //PROMPT THE USER
-function questions(firsttime = false) {
+function employeesInfo() {
     inquirer.prompt({
-        message: firsttime ? "Welcome to Employee Tracker, how can I help you today?" : "What else would you like help with today?",
+        message: "Welcome to Employee Tracker, what would you like to do?",
         type: "list",
         name: "choice",
         choices: [
@@ -110,7 +110,7 @@ function addEmployee() {
             message: "What is their manager's ID?"
         }
     ]).then(function (res) {
-        connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [res.firstName, res.lastName, res.roleId[0], res.managerId], function (err, data) {
+        connection.query("INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [res.firstName, res.lastName, res.roleId[0], res.managerId], function (err, data) {
             if (err) throw err;
             console.log("Employee added!");
             viewEmployees();
@@ -126,10 +126,10 @@ function addDepartment() {
             message: "What would you like your new department name to be?"
         }
     ]).then(function (res) {
-        connection.query("INSERT INTO department (name) VALUES (?)", [res.department], function (err, data) {
+        connection.query("INSERT INTO departments (name) VALUES (?)", [res.department], function (err, data) {
             if (err) throw err;
             console.log(`${res.department} Department added!`);
-            questions();
+            employeesInfo();
         });
     });
 }
@@ -152,7 +152,7 @@ function addRole() {
             message: "Enter department ID"
         }
     ]).then(function (res) {
-        connection.query("INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)", [res.title, res.salary, res.departmentId], function (err, data) {
+        connection.query("INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)", [res.title, res.salary, res.departmentId], function (err, data) {
             if (err) throw err;
             console.log("Role added!");
             viewRoles();
@@ -162,35 +162,35 @@ function addRole() {
 
 //view employees, departments and roles
 function viewEmployees() {
-    connection.query("SELECT * FROM employee", function (err, data) {
+    connection.query("SELECT * FROM employees", function (err, data) {
         if (err) throw err;
         console.table(data);
-        questions();
+        employeesInfo();
     });
 }
 
 function viewDepartments() {
-    connection.query("SELECT * FROM department", function (err, data) {
+    connection.query("SELECT * FROM departments", function (err, data) {
         if (err) throw err;
         console.table(data);
-        questions();
+        employeesInfo();
     });
 }
 
 function viewRoles() {
-    connection.query("SELECT * FROM role", function (err, data) {
+    connection.query("SELECT * FROM roles", function (err, data) {
         if (err) throw err;
         console.table(data);
-        questions();
+        employeesInfo();
     });
 }
 
 // updating employee managers
 async function updateEmployeeManager() {
-    const employees = await connection.query("SELECT id, first_name, last_name FROM employee")
-    const employeeChoices = employees.map(employee => ({
-        name: `${employee.first_name} ${employee.last_name}`,
-        value: employee.id
+    const employees = await connection.query("SELECT id, first_name, last_name FROM employees")
+    const employeeChoices = employees.map(employees => ({
+        name: `${employees.first_name} ${employees.last_name}`,
+        value: employees.id
     }));
 
     const employeeId = await
@@ -203,7 +203,7 @@ async function updateEmployeeManager() {
             }
         );
 
-    const managers = await connection.query("SELECT id, first_name, last_name FROM employee WHERE role_id=5")
+    const managers = await connection.query("SELECT id, first_name, last_name FROM employees WHERE role_id=5")
     const managerChoices = managers.map(manager => ({
         name: `${manager.first_name} ${manager.last_name}`,
         value: manager.id
@@ -218,17 +218,17 @@ async function updateEmployeeManager() {
                 choices: managerChoices
             }
         );
-    await connection.query("UPDATE employee SET manager_id=? WHERE id=?", [managerId.eName, employeeId.eName])
+    await connection.query("UPDATE employees SET manager_id=? WHERE id=?", [managerId.eName, employeeId.eName])
     console.log("Employee manager updated!")
     viewEmployees();
 }
 
 // updating employee roles
 async function updateEmployeeRole() {
-    const employees = await connection.query("SELECT id, first_name, last_name FROM employee")
-    const employeeChoices = employees.map(employee => ({
-        name: `${employee.first_name} ${employee.last_name}`,
-        value: employee.id
+    const employees = await connection.query("SELECT id, first_name, last_name FROM employees")
+    const employeeChoices = employees.map(employees => ({
+        name: `${employees.first_name} ${employees.last_name}`,
+        value: employees.id
     }));
     const employeeId = await inquirer.prompt(
         {
@@ -238,10 +238,10 @@ async function updateEmployeeRole() {
             choices: employeeChoices
         }
     );
-    const roles = await connection.query("SELECT * FROM role")
-    const roleChoices = roles.map(role => ({
-        name: `${role.id} ${role.title} $${role.salary}`,
-        value: role.id
+    const roles = await connection.query("SELECT * FROM roles")
+    const roleChoices = roles.map(roles => ({
+        name: `${roles.id} ${roles.title} $${roles.salary}`,
+        value: roles.id
     }));
     const roleId = await
         inquirer.prompt(
@@ -252,17 +252,17 @@ async function updateEmployeeRole() {
                 choices: roleChoices
             }
         );
-    await connection.query("UPDATE employee SET role_id=? WHERE id=?", [roleId.eName, employeeId.eName])
+    await connection.query("UPDATE employees SET role_id=? WHERE id=?", [roleId.eName, employeeId.eName])
         console.log("Employee role updated!")
         viewEmployees();
 }
 
-// deleting employees
+// deleting employees, departments and roles
 async function deleteEmployee() {
-    const employees = await connection.query("SELECT id, first_name, last_name FROM employee")
-    const employeeChoices = employees.map(employee => ({
-        name: `${employee.first_name} ${employee.last_name}`,
-        value: employee.id
+    const employees = await connection.query("SELECT id, first_name, last_name FROM employees")
+    const employeeChoices = employees.map(employees => ({
+        name: `${employees.first_name} ${employees.last_name}`,
+        value: employees.id
     }))
 
     const employeeId = await
@@ -274,14 +274,13 @@ async function deleteEmployee() {
                 choices: employeeChoices
             })
 
-    await connection.query("DELETE from employee where id=?", [employeeId.eName]);
+    await connection.query("DELETE from employees where id=?", [employeeId.eName]);
     console.log("Employee deleted.")
     viewEmployees();
 }
 
-// deleting departments
 async function deleteDepartment() {
-    const departments = await connection.query("SELECT * FROM department")
+    const departments = await connection.query("SELECT * FROM departments")
     const departmentChoices = departments.map(dept => ({
         name: `${dept.name}`,
         value: dept.id
@@ -296,14 +295,13 @@ async function deleteDepartment() {
                 choices: departmentChoices
             })
 
-    await connection.query("DELETE from department where id=?", [departmentId.eName]);
+    await connection.query("DELETE from departments where id=?", [departmentId.eName]);
     console.log("Department deleted.")
     viewDepartment();
 }
 
-//  deleting roles
 async function deleteRole() {
-    const roles = await connection.query("SELECT * FROM role")
+    const roles = await connection.query("SELECT * FROM roles")
     const roleChoices = roles.map(roles => ({
         name: `${roles.title}`,
         value: roles.id
@@ -318,9 +316,8 @@ async function deleteRole() {
                 choices: roleChoices
             });
 
-    await connection.query("DELETE from role where id=?", [roleId.eName]);
+    await connection.query("DELETE from roles where id=?", [roleId.eName]);
     console.log("Role deleted.")
     viewRoles();
-}
+};
 
-questions(true);
